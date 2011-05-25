@@ -1,6 +1,6 @@
 #!/bin/bash
 
-untracked=$(find_orphans jeffs-software jeffs-software-$(hostname) | sort | sed 's/^/\t/')
+untracked=$(find_orphaned_pkgs jeffs-software jeffs-software-$(hostname) | sort | sed 's/^/\t/')
 if [ "x$untracked" != "x" ] ; then
 	echo "=== Untracked Software  ==="
 	echo "$untracked"
