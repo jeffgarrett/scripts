@@ -1,0 +1,15 @@
+#!/bin/bash
+
+untracked=$(find_orphans jeffs-software jeffs-software-$(hostname) | sort | sed 's/^/\t/')
+if [ "x$untracked" != "x" ] ; then
+	echo "=== Untracked Software  ==="
+	echo "$untracked"
+	echo
+fi
+
+defunct=$(find_defunct_pkgs | sort | sed 's/^/\t/')
+if [ "x$defunct" != "x" ] ; then
+	echo "=== Defunct Removed Packages ==="
+	echo "$defunct"
+	echo
+fi
