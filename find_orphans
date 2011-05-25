@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+
+#
+# Given a list of root packages on the command line,
+# print out the currently installed packages which
+# are not dependencies of the root packages
+#
+# This is useful if one has a meta-package of software
+# to be installed and wants to find software not covered.
+#
+
+import sys
+import apt
+
+class MyVersion(object):
+    all_versions = {}
+
+    def __new__(cls, cache, name, version):
+        if name in cls.all_versions:
+            return cls.all_versions[name]
+        ret = super(MyVersion, cls).__new__(cls, cache, version)
+        ret.initialized = False
+        cls.all_versions[name] = ret
+        return ret
+
+    def __init__(self, cache, name, version):
+        if self.initialized:
+            return
+        self.initialized = True
+        self.cache = cache
+        self.name = name
+        self.version = version
+        # Count recommends as dependencies
+        self.dependencies = (self.get_dependencies(version.dependencies) +
+                             self.get_dependencies(version.recommends))
+
+    def __str__(self):
+        return "%s (%s)" % (self.name, self.version.version)
+    __repr__ = __str__
+
+    def get_dependencies(self, deplist):
+        deps = []
+        for d in deplist:
+            for e in d.or_dependencies:
+                if e.name in self.cache and self.cache[e.name].installed:
+                    deps.append(MyVersion(self.cache, e.name, self.cache[e.name].installed))
+                # Also handle virtual package dependencies
+                for p in self.cache.get_providing_packages(e.name):
+                    if p.installed:
+                        deps.append(MyVersion(self.cache, p.name, p.installed))
+        return deps
+
+def get_all_installed_versions(cache):
+    """
+    Return a list of all installed versions
+    """
+    ret = []
+    for pkg in cache:
+        name = pkg.name
+        version = pkg.installed
+        if version:
+            ret.append(MyVersion(cache, name, version))
+    return ret
+
+def get_installed_versions(cache, names):
+    """
+    Return a list of installed versions given a list of package names
+    """
+
+    ret = []
+    for pkg in names:
+        if pkg in cache and cache[pkg].installed:
+            ret.append(MyVersion(cache, pkg, cache[pkg].installed))
+        for p in cache.get_providing_packages(pkg):
+            if p.installed:
+                ret.append(MyVersion(cache, p.name, p.installed))
+    return ret
+
+#
+# Our global APT cache
+#
+
+cache = apt.Cache()
+
+#
+# Find the reachable versions recursively
+#
+reachable_versions = get_installed_versions(cache, sys.argv[1:])
+
+done = False
+while not done:
+    done = True
+    for v in reachable_versions:
+        deps = v.dependencies
+        for d in deps:
+            if d not in reachable_versions:
+                reachable_versions.append(d)
+                done = False
+
+#
+# Print the unreachable packages
+#
+for v in get_all_installed_versions(cache):
+    # Don't bother printing required packages
+    if v not in reachable_versions and not v.version.priority == "required":
+        print v.name
