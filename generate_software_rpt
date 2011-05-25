@@ -13,3 +13,10 @@ if [ "x$defunct" != "x" ] ; then
 	echo "$defunct"
 	echo
 fi
+
+required=$(find_required_pkgs | sort | sed 's/^/\t/')
+if [ "x$required" != "x" ] ; then
+	echo "=== Required Packages Missing ==="
+	echo "$required"
+	echo
+fi

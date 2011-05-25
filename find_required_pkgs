@@ -1,0 +1,20 @@
+#!/usr/bin/env python
+
+#
+# Find all "required" but uninstalled packages
+#
+
+import apt
+
+#
+# Our global APT cache
+#
+
+cache = apt.Cache()
+
+#
+# Print the required but uninstalled packages
+#
+for pkg in cache:
+    if pkg.candidate.priority == "required" and not pkg.installed:
+        print pkg.candidate.name
