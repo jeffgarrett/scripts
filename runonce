@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+
+import os, sys
+
+cmdlines = []
+for f in os.listdir('/proc/'):
+    if os.path.isdir('/proc/' + f) and f.isdigit():
+        cmdline = open('/proc/%s/cmdline' % f).read()
+        # Not all end with a null
+        if cmdline == '' or cmdline[-1] != '\x00':
+            cmdline = cmdline + '\x00'
+        # Now the program and its arguments are by nulls
+        cmdline = cmdline.replace('\x00', ' ')[:-1]
+        cmdlines.append(cmdline)
+
+cmd = ' '.join(sys.argv[1:])
+if cmd not in cmdlines:
+    os.system(cmd)
