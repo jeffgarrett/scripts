@@ -3,7 +3,9 @@
 import os, subprocess, sys
 
 cmdlines = []
-ps = subprocess.Popen(["ps", "-Ao", "command"], stdout=subprocess.PIPE)
+ps = subprocess.Popen(["ps", "-Ao", "args"], stdout=subprocess.PIPE)
+# Skip header line
+ps.stdout.readline()
 for cmdline in ps.stdout:
     # Remove ending newline
     cmdlines.append(cmdline[:-1])
